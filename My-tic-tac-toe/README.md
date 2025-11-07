@@ -30,7 +30,7 @@ My-tic-tac-toe/
 ## Setup Instructions
 1. **Clone the Repository**:
    ```bash
-   git clone https://github.com/Pravesh-Sudha/Python-projects.git
+   git clone https://github.com/Sangamesh080/Python-projects.git
    cd Python-projects/My-tic-tac-toe
    ```
 
@@ -68,8 +68,6 @@ Contributions are welcome! Please:
 4. Push to the branch (`git push origin feature/your-feature`).
 5. Open a pull request.
 
-## License
-This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
 
 ## Contact
-For issues or suggestions, open an issue on the [GitHub repository](https://github.com/Pravesh-Sudha/Python-projects.git) or contact the maintainer.
+For issues or suggestions, open an issue on the [GitHub repository](https://github.com/Sangamesh080/Python-projects.git) or contact the maintainer.
