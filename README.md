@@ -86,7 +86,7 @@ A Python script that triggers a Jenkins pipeline and sends the build status to a
 ## How to Clone This Repository
 1. Clone the repository using Git:
    ```bash
-   git clone https://github.com/Pravesh-Sudha/Python-projects.git
+   git clone https://github.com/Sangamesh080/Python-projects.git
    ```
 2. Navigate to the project directory:
    ```bash
@@ -97,10 +97,6 @@ A Python script that triggers a Jenkins pipeline and sends the build status to a
 ## Contributing
 Contributions are welcome! Feel free to fork this repository, make changes, and submit a pull request. For major changes, please open an issue first to discuss what you would like to change.
 
-## License
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
----
 
 Happy Coding! 🎉
 
