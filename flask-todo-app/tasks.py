@@ -1,64 +1,46 @@
-from flask import Blueprint, request, redirect, url_for, render_template, flash
-from utils import generate_task_id  # Assuming this function is defined in utils.py
+from flask import Flask, render_template, request, redirect, url_for
 import boto3
-from sns import send_task_completion_email
-from config import Config
+from botocore.exceptions import ClientError
 
-tasks = Blueprint('tasks', __name__)
+app = Flask(__name__)
 
-# DynamoDB client to interact with the database
-dynamodb = boto3.resource('dynamodb', region_name=Config.AWS_REGION)
-tasks_table = dynamodb.Table(Config.DYNAMODB_TABLE)
+# ✅ Correct region (don’t include availability zone letter)
+dynamodb = boto3.resource('dynamodb', region_name='us-east-1')
+tasks_table = dynamodb.Table('todo_tasks')
 
-@tasks.route('/')
+@app.route('/')
 def home():
-    # Fetch tasks from DynamoDB
-    response = tasks_table.scan()
-    tasks_data = response.get('Items', [])
-    return render_template('dashboard.html', tasks=tasks_data)
+    try:
+        response = tasks_table.scan()
+        tasks = response.get('Items', [])
+        return render_template('index.html', tasks=tasks)
+    except ClientError as e:
+        print(f"AWS Error: {e.response['Error']['Message']}")
+        return f"<h3>Unable to connect to DynamoDB: {e.response['Error']['Message']}</h3>", 500
+    except Exception as e:
+        print(f"Unexpected error: {str(e)}")
+        return f"<h3>Server Error: {str(e)}</h3>", 500
 
-@tasks.route('/add', methods=['POST'])
+@app.route('/add', methods=['POST'])
 def add_task():
-    task_name = request.form.get('task_name')
-    if task_name:
-        task_id = generate_task_id()
-        tasks_table.put_item(
-            Item={
-                'task_id': task_id,
-                'task_name': task_name,
-                'completed': False,
-            }
-        )
-        flash('Task added successfully!', 'success')
-    return redirect(url_for('tasks.home'))
+    task_name = request.form['task']
+    if not task_name.strip():
+        return redirect(url_for('home'))
+    try:
+        tasks_table.put_item(Item={'task_id': task_name, 'task_name': task_name})
+        return redirect(url_for('home'))
+    except Exception as e:
+        print(f"Error adding task: {str(e)}")
+        return f"<h3>Failed to add task: {str(e)}</h3>", 500
 
-@tasks.route('/complete/<task_id>', methods=['POST'])
-def complete_task(task_id):
-    tasks_table.update_item(
-        Key={'task_id': task_id},
-        UpdateExpression="SET completed = :val",
-        ExpressionAttributeValues={':val': True}
-    )
-
-    # Get the task description (task_name) to send in the email
-    response = tasks_table.get_item(Key={'task_id': task_id})
-    task_data = response.get('Item')
-    
-    if task_data:
-        task_description = task_data['task_name']
-        
-        # Call the function to send the completion email
-        send_task_completion_email(Config.EMAIL, task_description)
-
-        flash('Task marked as completed and email notification sent', 'success')
-    else:
-        flash('Task not found', 'danger')
-
-    flash('Task marked as completed', 'success')
-    return redirect(url_for('tasks.home'))
-
-@tasks.route('/delete/<task_id>', methods=['POST'])
+@app.route('/delete/<string:task_id>')
 def delete_task(task_id):
-    tasks_table.delete_item(Key={'task_id': task_id})
-    flash('Task deleted successfully!', 'danger')
-    return redirect(url_for('tasks.home'))
+    try:
+        tasks_table.delete_item(Key={'task_id': task_id})
+        return redirect(url_for('home'))
+    except Exception as e:
+        print(f"Error deleting task: {str(e)}")
+        return f"<h3>Failed to delete task: {str(e)}</h3>", 500
+
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=5000)
