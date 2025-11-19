@@ -2,7 +2,7 @@ pipeline {
     agent any
 
     environment {
-        AWS_REGION   = 'us-east-1'
+        AWS_REGION   = 'us-east-1c'
         PROJECT_DIR  = "$WORKSPACE/flask-todo-app/"
         TERRAFORM_DIR = "$WORKSPACE/flask-todo-app/terraform-setup"
     }
@@ -10,7 +10,7 @@ pipeline {
     stages {
         stage("Checking the code") {
             steps {
-                git branch: "main", url: "https://github.com/Sangamesh080/Python-projects"
+                git branch: "main", url: "https://github.com/yogithapuppala/Python-project"
             }
         }
 
