@@ -1,10 +1,9 @@
 pipeline {
-
     agent any
 
     environment {
-        AWS_REGION = 'us-east-1'
-        PROJECT_DIR = "$WORKSPACE/flask-todo-app/"
+        AWS_REGION   = 'us-east-1'
+        PROJECT_DIR  = "$WORKSPACE/flask-todo-app/"
         TERRAFORM_DIR = "$WORKSPACE/flask-todo-app/terraform-setup"
     }
 
@@ -17,20 +16,17 @@ pipeline {
 
         stage("Provisioning and Applying Terraform files") {
             steps {
-                withCredentials([
-                    string(credentialsId: 'AWS_ACCESS_KEY_ID', variable: 'AWS_ACCESS_KEY_ID'),
-                    string(credentialsId: 'AWS_SECRET_ACCESS_KEY', variable: 'AWS_SECRET_ACCESS_KEY')
-                ]) {
+                withCredentials([[
+                    $class: 'AmazonWebServicesCredentialsBinding',
+                    credentialsId: 'aws-creds'
+                ]]) {
                     script {
                         dir(TERRAFORM_DIR) {
-                            sh """
-                            export AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID
-                            export AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY
+                            sh '''
                             terraform init
-    
-                            echo "Applying the Terraform Files"
+                            echo "Applying the Terraform Files..."
                             terraform apply -auto-approve
-                            """
+                            '''
                         }
                     }
                 }
@@ -43,40 +39,6 @@ pipeline {
                     dir(TERRAFORM_DIR) {
                         def output = sh(script: 'terraform output -raw sns_topic_arn', returnStdout: true).trim()
                         env.SNS_TOPIC_ARN = output
-                        echo "SNS-Topic-ARN: ${env.SNS_TOPIC_ARN}"   
-                    } 
-                }
-            }
-        }
-
-        stage("Building the Dockerfile") {
-            steps {
-                script {
-                    dir(PROJECT_DIR) {
-                        sh 'docker build -t flask-todo-dynamo:v1 .'
+                        echo "SNS-Topic-ARN: ${env.SNS_TOPIC_ARN}"
                     }
                 }
-            }
-        }
-
-        stage("Running the Docker Image") {
-            steps {
-                withCredentials([
-                    string(credentialsId: 'AWS_ACCESS_KEY_ID', variable: 'AWS_ACCESS_KEY_ID'),
-                    string(credentialsId: 'AWS_SECRET_ACCESS_KEY', variable: 'AWS_SECRET_ACCESS_KEY')
-                ]){
-                     script {
-                        sh """ 
-                        docker run -e AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID} \
-                                       -e AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY} \
-                                       -e AWS_REGION=us-east-1 \
-                                       -e SNS_TOPIC_ARN=${env.SNS_TOPIC_ARN} \
-                                       -p 5000:5000 \
-                                       -d flask-todo-dynamo:v1
-                        """
-                    }
-                }    
-            }   
-        }
-    }
-}
